@@ -55,7 +55,7 @@
                     // Preusmeravanje na glavnu stranicu
                     localStorage.setItem('user', JSON.stringify(result.user));
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
+                        window.location.href = 'home.html';
                     }, 1000);
                 } else {
                     const error = await response.json();

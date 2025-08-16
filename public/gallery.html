@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="sr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,7 +34,7 @@
         header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         header p {
@@ -68,14 +69,14 @@
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .project-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
         }
 
         .project-header {
@@ -129,6 +130,28 @@
             color: #2d3748;
             font-size: 0.9rem;
             margin-bottom: 15px;
+        }
+
+        .project-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #4a5568;
+        }
+
+        .stat-icon {
+            font-size: 1rem;
         }
 
         .project-actions {
@@ -284,6 +307,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -306,7 +330,7 @@
 
     <script>
         const API_BASE_URL = '/api';
-        
+
         // Simulacija trenutnog korisnika (u realnoj aplikaciji bi se čuvao u session/localStorage)
         const CURRENT_USER_ID = 1;
 
@@ -323,14 +347,14 @@
         // Funkcija za kreiranje HTML-a za tehnologije
         function createTechTags(technologies) {
             if (!technologies) return '';
-            return technologies.split(', ').map(tech => 
+            return technologies.split(', ').map(tech =>
                 `<span class="tech-tag">${tech.trim()}</span>`
             ).join('');
         }
 
         // Funkcija za kreiranje HTML-a za komentare
         function createCommentsHTML(comments, projectId) {
-            const commentsHTML = comments.map(comment => 
+            const commentsHTML = comments.map(comment =>
                 `<div class="comment">
                     <div class="comment-author">${comment.author}</div>
                     <div class="comment-text">${comment.comment}</div>
@@ -362,6 +386,21 @@
                             <h3 class="project-title">${project.naziv}</h3>
                             <div class="project-author">Autor: ${project.author}</div>
                             <div class="project-date">${formatDate(project.created_at)}</div>
+                        </div>
+                    </div>
+
+                    <div class="project-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">👁️</span>
+                            <span>${project.views} pregleda</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">💬</span>
+                            <span>${project.comments.length} komentara</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">⭐</span>
+                            <span>${project.upvotes + project.downvotes} ocena</span>
                         </div>
                     </div>
                     
@@ -399,22 +438,22 @@
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const projectsGrid = document.getElementById('projectsGrid');
-            
+
             try {
                 loading.classList.remove('hidden');
                 error.classList.add('hidden');
-                
+
                 const response = await fetch(`${API_BASE_URL}/projects`);
-                
+
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                
+
                 const projects = await response.json();
-                
+
                 projectsGrid.innerHTML = projects.map(createProjectCard).join('');
                 loading.classList.add('hidden');
-                
+
             } catch (err) {
                 console.error('Error loading projects:', err);
                 loading.classList.add('hidden');
@@ -435,7 +474,7 @@
                         voteType: voteType
                     })
                 });
-                
+
                 if (response.ok) {
                     // Ponovo učitaj projekte da se prikažu novi brojevi glasova
                     await loadProjects();
@@ -451,9 +490,9 @@
         async function addComment(projectId) {
             const input = document.getElementById(`comment-input-${projectId}`);
             const comment = input.value.trim();
-            
+
             if (!comment) return;
-            
+
             try {
                 const response = await fetch(`${API_BASE_URL}/projects/${projectId}/comments`, {
                     method: 'POST',
@@ -465,7 +504,7 @@
                         comment: comment
                     })
                 });
-                
+
                 if (response.ok) {
                     input.value = '';
                     // Ponovo učitaj projekte da se prikažu novi komentari
@@ -485,13 +524,30 @@
         }
 
         // Funkcija za prikazivanje detalja projekta
-        function viewDetails(projectId) {
-            // U realnoj aplikaciji bi se otvorila nova stranica ili modal
-            alert(`Otvaranje detalja za projekat ID: ${projectId}\n\n(Ovde bi se otvorila stranica sa svim detaljima)`);
-        }
+        async function viewDetails(projectId) {
+            try {
+                // Zabelži pregled
+                await fetch(`${API_BASE_URL}/projects/${projectId}/view`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: CURRENT_USER_ID
+                    })
+                });
 
+                // Preusmeri na stranicu detalja
+                window.location.href = `/project/${projectId}`;
+            } catch (error) {
+                console.error('Error recording view:', error);
+                // Čak i ako se pregled ne zabeleži, idi na stranicu detalja
+                window.location.href = `/project/${projectId}`;
+            }
+        }
         // Učitaj projekte kada se stranica učita
         document.addEventListener('DOMContentLoaded', loadProjects);
     </script>
 </body>
+
 </html>

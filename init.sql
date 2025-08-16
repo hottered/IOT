@@ -80,6 +80,31 @@ INSERT INTO comments (project_id, user_id, comment) VALUES
 (4, 1, 'Odlična ideja za mobilnu app!'),
 (5, 3, 'Blog platforma izgleda veoma obećavajuće.');
 
+
+CREATE TABLE IF NOT EXISTS project_views (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ project_id INT NOT NULL,
+ user_id INT,
+ ip_address VARCHAR(45),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+ FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+ INDEX idx_project_views (project_id, created_at)
+);
+
+-- Insert sample views
+INSERT INTO project_views (project_id, user_id, ip_address) VALUES
+(1, 2, '192.168.1.100'),
+(1, 3, '192.168.1.101'),
+(1, NULL, '192.168.1.102'),
+(2, 1, '192.168.1.100'),
+(2, 3, '192.168.1.101'),
+(3, 1, '192.168.1.100'),
+(3, 2, '192.168.1.101'),
+(3, NULL, '192.168.1.103'),
+(4, 2, '192.168.1.101'),
+(5, 1, '192.168.1.100'),
+(5, 3, '192.168.1.101');
 -- Grant permissions to root user from any host (for Docker networking)
 GRANT ALL PRIVILEGES ON testdb.* TO 'root'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
