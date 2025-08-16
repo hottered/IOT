@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Projekti - Dodaj Novi Projekat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-menu li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-menu li a:hover,
+        .nav-menu li a.active {
+            opacity: 0.8;
+        }
+
+        .nav-user {
+            color: white;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        main {
+            display: grid;
+            gap: 30px;
+            grid-template-columns: 1fr;
+        }
+
+        section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .form-section form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input[type="text"],
+        textarea {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+                padding: 0 10px;
+            }
+
+            .nav-menu {
+                gap: 20px;
+            }
+
+            .container {
+                padding: 20px 10px;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">IoT Platforma</a>
+            <ul class="nav-menu">
+                <li><a href="#">Početna</a></li>
+                <li><a href="#" class="active">Moji Projekti</a></li>
+                <li><a href="#">Mentorstvo</a></li>
+                <li><a href="#">Profil</a></li>
+            </ul>
+            <div class="nav-user">
+                Dobrodošli, korisniče!
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>Dodaj Novi IoT Projekat</h1>
+            <p>Unesite detalje o vašem IoT projektu i podelite ga sa zajednicom</p>
+        </header>
+
+        <main>
+            <section class="form-section">
+                <h2>Detalji Projekta</h2>
+                <form id="projectForm">
+                    <div class="input-group">
+                        <label for="naziv">Naziv projekta *</label>
+                        <input type="text" id="naziv" name="naziv" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="opis">Opis projekta</label>
+                        <textarea id="opis" name="opis" placeholder="Opišite vaš IoT projekat..."></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="tehnologije">Korišćene tehnologije</label>
+                        <input type="text" id="tehnologije" name="tehnologije" placeholder="Arduino, Raspberry Pi, sensors, WiFi...">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="ciljevi">Ciljevi projekta</label>
+                        <textarea id="ciljevi" name="ciljevi" placeholder="Koje probleme rešava vaš projekat?"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="plan_rada">Plan rada</label>
+                        <textarea id="plan_rada" name="plan_rada" placeholder="Opišite korake implementacije..."></textarea>
+                    </div>
+
+                    <button type="submit">Dodaj Projekat</button>
+                </form>
+
+                <div class="success" id="successMessage">
+                    Projekat je uspešno dodat!
+                </div>
+                <div class="error" id="errorMessage">
+                    Greška pri dodavanju projekta. Pokušajte ponovo.
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Simulacija user_id - u realnoj aplikaciji bi se uzimao iz sesije/tokena
+        function getCurrentUser() {
+            const userData = localStorage.getItem('user');
+            if (!userData) {
+                alert('Niste ulogovani!');
+                window.location.href = 'login.html';
+                return null;
+            }
+            return JSON.parse(userData);
+        }
+
+        // Proveri da li je korisnik ulogovan pri učitavanju stranice
+        const currentUser = getCurrentUser();
+        if (currentUser) {
+            document.querySelector('.nav-user').textContent = `Dobrodošli, ${currentUser.name}!`;
+        }
+
+        document.getElementById('projectForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const user = getCurrentUser();
+            if (!user) return;
+
+            const formData = new FormData(this);
+            const projectData = {
+                user_id: user.id,
+                naziv: formData.get('naziv'),
+                opis: formData.get('opis'),
+                tehnologije: formData.get('tehnologije'),
+                ciljevi: formData.get('ciljevi'),
+                plan_rada: formData.get('plan_rada')
+            };
+
+            try {
+                const response = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(projectData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('errorMessage').style.display = 'none';
+                    this.reset();
+                    
+                    setTimeout(() => {
+                        document.getElementById('successMessage').style.display = 'none';
+                    }, 3000);
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('successMessage').style.display = 'none';
+                document.getElementById('errorMessage').textContent = 'Greška: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

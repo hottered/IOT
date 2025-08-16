@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node.js MySQL App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Node.js MySQL Application</h1>
+            <p>Simple web app demonstrating Node.js with MySQL integration</p>
+        </header>
+
+        <main>
+            <section class="form-section">
+                <h2>Add New User</h2>
+                <form id="userForm">
+                    <div class="input-group">
+                        <label for="name">Name:</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <button type="submit">Add User</button>
+                </form>
+            </section>
+
+            <section class="users-section">
+                <h2>Users List</h2>
+                <button id="loadUsers">Load Users</button>
+                <div id="usersList" class="users-container"></div>
+            </section>
+
+            <section class="status-section">
+                <h2>Database Status</h2>
+                <div id="status" class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span>Checking connection...</span>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
