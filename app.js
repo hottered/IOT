@@ -106,6 +106,50 @@ app.post('/api/register', async (req, res) => {
 });
 
 
+app.get('/api/projects', async (req, res) => {
+    try {
+        // Query za projekte sa autorima i brojem glasova
+        const projectsQuery = `
+            SELECT 
+                p.id,
+                p.naziv,
+                p.opis,
+                p.tehnologije,
+                p.ciljevi,
+                p.plan_rada,
+                p.created_at,
+                u.name as author,
+                COALESCE(SUM(CASE WHEN v.vote_type = 'upvote' THEN 1 ELSE 0 END), 0) as upvotes,
+                COALESCE(SUM(CASE WHEN v.vote_type = 'downvote' THEN 1 ELSE 0 END), 0) as downvotes
+            FROM projects p
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN votes v ON p.id = v.project_id
+            GROUP BY p.id, p.naziv, p.opis, p.tehnologije, p.ciljevi, p.plan_rada, p.created_at, u.name
+            ORDER BY p.created_at DESC
+        `;
+        
+        const [projects] = await pool.execute(projectsQuery);
+        
+        // Za svaki projekat dobavi komentare
+        for (let project of projects) {
+            const commentsQuery = `
+                SELECT c.comment, c.created_at, u.name as author
+                FROM comments c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.project_id = ?
+                ORDER BY c.created_at ASC
+            `;
+            const [comments] = await pool.execute(commentsQuery, [project.id]);
+            project.comments = comments;
+        }
+        
+        res.json(projects);
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+        res.status(500).json({ error: 'Failed to fetch projects' });
+    }
+});
+
 app.post('/api/projects', async (req, res) => {
     try {
         const { user_id, naziv, opis, tehnologije, ciljevi, plan_rada } = req.body;
@@ -155,6 +199,70 @@ app.post('/api/users', async (req, res) => {
     res.status(500).json({ error: 'Failed to create user' });
   }
 });
+
+app.post('/api/projects/:id/vote', async (req, res) => {
+    const projectId = req.params.id;
+    const { userId, voteType } = req.body;
+    
+    if (!userId || !voteType || !['upvote', 'downvote'].includes(voteType)) {
+        return res.status(400).json({ error: 'Invalid vote data' });
+    }
+    
+    try {
+        // Proveri da li je korisnik već glasao
+        const [existingVote] = await pool.execute(
+            'SELECT id FROM votes WHERE project_id = ? AND user_id = ?',
+            [projectId, userId]
+        );
+        
+        if (existingVote.length > 0) {
+            // Update postojeći glas
+            await pool.execute(
+                'UPDATE votes SET vote_type = ? WHERE project_id = ? AND user_id = ?',
+                [voteType, projectId, userId]
+            );
+        } else {
+            // Dodaj novi glas
+            await pool.execute(
+                'INSERT INTO votes (project_id, user_id, vote_type) VALUES (?, ?, ?)',
+                [projectId, userId, voteType]
+            );
+        }
+        
+        res.json({ success: true, message: 'Vote recorded successfully' });
+    } catch (error) {
+        console.error('Error recording vote:', error);
+        res.status(500).json({ error: 'Failed to record vote' });
+    }
+});
+
+// POST /api/projects/:id/comments - Dodaj komentar
+app.post('/api/projects/:id/comments', async (req, res) => {
+    const projectId = req.params.id;
+    const { userId, comment } = req.body;
+    
+    if (!userId || !comment || comment.trim().length === 0) {
+        return res.status(400).json({ error: 'Invalid comment data' });
+    }
+    
+    try {
+        await pool.execute(
+            'INSERT INTO comments (project_id, user_id, comment) VALUES (?, ?, ?)',
+            [projectId, userId, comment.trim()]
+        );
+        
+        res.json({ success: true, message: 'Comment added successfully' });
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        res.status(500).json({ error: 'Failed to add comment' });
+    }
+});
+
+// Galerija route
+app.get('/gallery', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'gallery.html'));
+});
+
 
 // Start server
 app.listen(PORT, () => {

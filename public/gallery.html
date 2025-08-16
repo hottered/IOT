@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galerija Projekata</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin: 50px 0;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .project-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .project-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .project-author {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+
+        .project-date {
+            font-size: 0.8rem;
+            color: #a0aec0;
+        }
+
+        .project-description {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .project-technologies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .tech-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .project-goals {
+            color: #2d3748;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .project-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+        }
+
+        .voting-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .vote-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upvote-btn {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .upvote-btn:hover {
+            background: #9ae6b4;
+        }
+
+        .downvote-btn {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .downvote-btn:hover {
+            background: #feb2b2;
+        }
+
+        .view-details-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .view-details-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .comments-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .comments-toggle {
+            background: none;
+            border: none;
+            color: #667eea;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .comments-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .comment {
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 3px;
+        }
+
+        .comment-text {
+            color: #718096;
+        }
+
+        .add-comment {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .comment-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .project-actions {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .add-comment {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Galerija Projekata</h1>
+            <p>Istražite inovativne projekte naše zajednice</p>
+        </header>
+
+        <div id="loading" class="loading">
+            Učitavaju se projekti...
+        </div>
+
+        <div id="error" class="error hidden">
+            Greška pri učitavanju projekata. Molimo pokušajte ponovo.
+        </div>
+
+        <div class="projects-grid" id="projectsGrid">
+            <!-- Projekti se učitavaju iz baze -->
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+        
+        // Simulacija trenutnog korisnika (u realnoj aplikaciji bi se čuvao u session/localStorage)
+        const CURRENT_USER_ID = 1;
+
+        // Funkcija za formatiranje datuma
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('sr-RS', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Funkcija za kreiranje HTML-a za tehnologije
+        function createTechTags(technologies) {
+            if (!technologies) return '';
+            return technologies.split(', ').map(tech => 
+                `<span class="tech-tag">${tech.trim()}</span>`
+            ).join('');
+        }
+
+        // Funkcija za kreiranje HTML-a za komentare
+        function createCommentsHTML(comments, projectId) {
+            const commentsHTML = comments.map(comment => 
+                `<div class="comment">
+                    <div class="comment-author">${comment.author}</div>
+                    <div class="comment-text">${comment.comment}</div>
+                </div>`
+            ).join('');
+
+            return `
+                <div class="comments-section">
+                    <button class="comments-toggle" onclick="toggleComments(${projectId})">
+                        ${comments.length > 0 ? `Prikaži komentare (${comments.length})` : 'Nema komentara'}
+                    </button>
+                    <div class="comments-list hidden" id="comments-${projectId}">
+                        ${commentsHTML}
+                        <div class="add-comment">
+                            <input type="text" class="comment-input" placeholder="Dodajte komentar..." id="comment-input-${projectId}">
+                            <button class="comment-btn" onclick="addComment(${projectId})">Pošalji</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Funkcija za kreiranje HTML-a za jedan projekat
+        function createProjectCard(project) {
+            return `
+                <div class="project-card">
+                    <div class="project-header">
+                        <div>
+                            <h3 class="project-title">${project.naziv}</h3>
+                            <div class="project-author">Autor: ${project.author}</div>
+                            <div class="project-date">${formatDate(project.created_at)}</div>
+                        </div>
+                    </div>
+                    
+                    <p class="project-description">${project.opis}</p>
+                    
+                    <div class="project-technologies">
+                        ${createTechTags(project.tehnologije)}
+                    </div>
+                    
+                    <div class="project-goals">
+                        <strong>Ciljevi:</strong> ${project.ciljevi}
+                    </div>
+                    
+                    <div class="project-actions">
+                        <div class="voting-section">
+                            <button class="vote-btn upvote-btn" onclick="vote(${project.id}, 'upvote')">
+                                👍 ${project.upvotes}
+                            </button>
+                            <button class="vote-btn downvote-btn" onclick="vote(${project.id}, 'downvote')">
+                                👎 ${project.downvotes}
+                            </button>
+                        </div>
+                        <button class="view-details-btn" onclick="viewDetails(${project.id})">
+                            Detaljnije
+                        </button>
+                    </div>
+                    
+                    ${createCommentsHTML(project.comments, project.id)}
+                </div>
+            `;
+        }
+
+        // Funkcija za učitavanje projekata iz baze
+        async function loadProjects() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const projectsGrid = document.getElementById('projectsGrid');
+            
+            try {
+                loading.classList.remove('hidden');
+                error.classList.add('hidden');
+                
+                const response = await fetch(`${API_BASE_URL}/projects`);
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                const projects = await response.json();
+                
+                projectsGrid.innerHTML = projects.map(createProjectCard).join('');
+                loading.classList.add('hidden');
+                
+            } catch (err) {
+                console.error('Error loading projects:', err);
+                loading.classList.add('hidden');
+                error.classList.remove('hidden');
+            }
+        }
+
+        // Funkcija za glasanje
+        async function vote(projectId, voteType) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/projects/${projectId}/vote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: CURRENT_USER_ID,
+                        voteType: voteType
+                    })
+                });
+                
+                if (response.ok) {
+                    // Ponovo učitaj projekte da se prikažu novi brojevi glasova
+                    await loadProjects();
+                } else {
+                    console.error('Vote failed');
+                }
+            } catch (error) {
+                console.error('Error voting:', error);
+            }
+        }
+
+        // Funkcija za dodavanje komentara
+        async function addComment(projectId) {
+            const input = document.getElementById(`comment-input-${projectId}`);
+            const comment = input.value.trim();
+            
+            if (!comment) return;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/projects/${projectId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: CURRENT_USER_ID,
+                        comment: comment
+                    })
+                });
+                
+                if (response.ok) {
+                    input.value = '';
+                    // Ponovo učitaj projekte da se prikažu novi komentari
+                    await loadProjects();
+                } else {
+                    console.error('Adding comment failed');
+                }
+            } catch (error) {
+                console.error('Error adding comment:', error);
+            }
+        }
+
+        // Funkcija za prikazivanje/sakrivanje komentara
+        function toggleComments(projectId) {
+            const commentsList = document.getElementById(`comments-${projectId}`);
+            commentsList.classList.toggle('hidden');
+        }
+
+        // Funkcija za prikazivanje detalja projekta
+        function viewDetails(projectId) {
+            // U realnoj aplikaciji bi se otvorila nova stranica ili modal
+            alert(`Otvaranje detalja za projekat ID: ${projectId}\n\n(Ovde bi se otvorila stranica sa svim detaljima)`);
+        }
+
+        // Učitaj projekte kada se stranica učita
+        document.addEventListener('DOMContentLoaded', loadProjects);
+    </script>
+</body>
+</html>
