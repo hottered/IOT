@@ -105,10 +105,9 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-
 app.get('/api/projects', async (req, res) => {
     try {
-        // Query za projekte sa autorima i brojem glasova
+        // Query za projekte sa autorima, brojem glasova i pregleda
         const projectsQuery = `
             SELECT 
                 p.id,
@@ -120,11 +119,17 @@ app.get('/api/projects', async (req, res) => {
                 p.created_at,
                 u.name as author,
                 COALESCE(SUM(CASE WHEN v.vote_type = 'upvote' THEN 1 ELSE 0 END), 0) as upvotes,
-                COALESCE(SUM(CASE WHEN v.vote_type = 'downvote' THEN 1 ELSE 0 END), 0) as downvotes
+                COALESCE(SUM(CASE WHEN v.vote_type = 'downvote' THEN 1 ELSE 0 END), 0) as downvotes,
+                COALESCE(view_counts.view_count, 0) as views
             FROM projects p
             JOIN users u ON p.user_id = u.id
             LEFT JOIN votes v ON p.id = v.project_id
-            GROUP BY p.id, p.naziv, p.opis, p.tehnologije, p.ciljevi, p.plan_rada, p.created_at, u.name
+            LEFT JOIN (
+                SELECT project_id, COUNT(*) as view_count 
+                FROM project_views 
+                GROUP BY project_id
+            ) view_counts ON p.id = view_counts.project_id
+            GROUP BY p.id, p.naziv, p.opis, p.tehnologije, p.ciljevi, p.plan_rada, p.created_at, u.name, view_counts.view_count
             ORDER BY p.created_at DESC
         `;
         
@@ -149,6 +154,50 @@ app.get('/api/projects', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch projects' });
     }
 });
+
+// app.get('/api/projects', async (req, res) => {
+//     try {
+//         // Query za projekte sa autorima i brojem glasova
+//         const projectsQuery = `
+//             SELECT 
+//                 p.id,
+//                 p.naziv,
+//                 p.opis,
+//                 p.tehnologije,
+//                 p.ciljevi,
+//                 p.plan_rada,
+//                 p.created_at,
+//                 u.name as author,
+//                 COALESCE(SUM(CASE WHEN v.vote_type = 'upvote' THEN 1 ELSE 0 END), 0) as upvotes,
+//                 COALESCE(SUM(CASE WHEN v.vote_type = 'downvote' THEN 1 ELSE 0 END), 0) as downvotes
+//             FROM projects p
+//             JOIN users u ON p.user_id = u.id
+//             LEFT JOIN votes v ON p.id = v.project_id
+//             GROUP BY p.id, p.naziv, p.opis, p.tehnologije, p.ciljevi, p.plan_rada, p.created_at, u.name
+//             ORDER BY p.created_at DESC
+//         `;
+        
+//         const [projects] = await pool.execute(projectsQuery);
+        
+//         // Za svaki projekat dobavi komentare
+//         for (let project of projects) {
+//             const commentsQuery = `
+//                 SELECT c.comment, c.created_at, u.name as author
+//                 FROM comments c
+//                 JOIN users u ON c.user_id = u.id
+//                 WHERE c.project_id = ?
+//                 ORDER BY c.created_at ASC
+//             `;
+//             const [comments] = await pool.execute(commentsQuery, [project.id]);
+//             project.comments = comments;
+//         }
+        
+//         res.json(projects);
+//     } catch (error) {
+//         console.error('Error fetching projects:', error);
+//         res.status(500).json({ error: 'Failed to fetch projects' });
+//     }
+// });
 
 app.post('/api/projects', async (req, res) => {
     try {
@@ -198,6 +247,86 @@ app.post('/api/users', async (req, res) => {
     console.error('Error creating user:', error);
     res.status(500).json({ error: 'Failed to create user' });
   }
+});
+
+app.get('/project/:id', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'project-details.html'));
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+    const projectId = req.params.id;
+    
+    try {
+        // Query za projekat sa autorima, brojem glasova i pregleda
+        const projectQuery = `
+            SELECT 
+                p.id,
+                p.naziv,
+                p.opis,
+                p.tehnologije,
+                p.ciljevi,
+                p.plan_rada,
+                p.created_at,
+                u.name as author,
+                u.email as author_email,
+                COALESCE(SUM(CASE WHEN v.vote_type = 'upvote' THEN 1 ELSE 0 END), 0) as upvotes,
+                COALESCE(SUM(CASE WHEN v.vote_type = 'downvote' THEN 1 ELSE 0 END), 0) as downvotes,
+                COALESCE(view_counts.view_count, 0) as views
+            FROM projects p
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN votes v ON p.id = v.project_id
+            LEFT JOIN (
+                SELECT project_id, COUNT(*) as view_count 
+                FROM project_views 
+                GROUP BY project_id
+            ) view_counts ON p.id = view_counts.project_id
+            WHERE p.id = ?
+            GROUP BY p.id, p.naziv, p.opis, p.tehnologije, p.ciljevi, p.plan_rada, p.created_at, u.name, u.email, view_counts.view_count
+        `;
+        
+        const [projects] = await pool.execute(projectQuery, [projectId]);
+        
+        if (projects.length === 0) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+        
+        const project = projects[0];
+        
+        // Dobavi komentare
+        const commentsQuery = `
+            SELECT c.comment, c.created_at, u.name as author
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.project_id = ?
+            ORDER BY c.created_at ASC
+        `;
+        const [comments] = await pool.execute(commentsQuery, [projectId]);
+        project.comments = comments;
+        
+        res.json(project);
+    } catch (error) {
+        console.error('Error fetching project:', error);
+        res.status(500).json({ error: 'Failed to fetch project' });
+    }
+});
+
+app.post('/api/projects/:id/view', async (req, res) => {
+    const projectId = req.params.id;
+    const { userId } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress || '0.0.0.0';
+    
+    try {
+        // Dodaj novi pregled
+        await pool.execute(
+            'INSERT INTO project_views (project_id, user_id, ip_address) VALUES (?, ?, ?)',
+            [projectId, userId || null, ipAddress]
+        );
+        
+        res.json({ success: true, message: 'View recorded successfully' });
+    } catch (error) {
+        console.error('Error recording view:', error);
+        res.status(500).json({ error: 'Failed to record view' });
+    }
 });
 
 app.post('/api/projects/:id/vote', async (req, res) => {
