@@ -392,6 +392,246 @@ app.get('/gallery', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'gallery.html'));
 });
 
+// Route za deadlines.html
+app.get('/deadlines', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'deadlines.html'));
+});
+
+// GET /api/deadlines - Dobij sve rokove
+app.get('/api/deadlines', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                d.id,
+                d.title,
+                d.description,
+                d.deadline_date,
+                d.created_at,
+                u.name as created_by_name
+            FROM deadlines d
+            LEFT JOIN users u ON d.created_by = u.id
+            ORDER BY d.deadline_date ASC
+        `;
+        
+        const [deadlines] = await pool.execute(query);
+        res.json(deadlines);
+    } catch (error) {
+        console.error('Error fetching deadlines:', error);
+        res.status(500).json({ error: 'Failed to fetch deadlines' });
+    }
+});
+
+// POST /api/deadlines - Dodaj novi rok
+app.post('/api/deadlines', async (req, res) => {
+    const { title, description, deadline_date, created_by } = req.body;
+    
+    if (!title || !deadline_date || !created_by) {
+        return res.status(400).json({ 
+            error: 'Naziv, datum i kreator su obavezni' 
+        });
+    }
+    
+    try {
+        const [result] = await pool.execute(
+            'INSERT INTO deadlines (title, description, deadline_date, created_by) VALUES (?, ?, ?, ?)',
+            [title, description || null, deadline_date, created_by]
+        );
+        
+        res.status(201).json({
+            success: true,
+            deadline_id: result.insertId,
+            message: 'Rok je uspešno kreiran'
+        });
+    } catch (error) {
+        console.error('Error creating deadline:', error);
+        res.status(500).json({ 
+            error: 'Greška pri kreiranju roka' 
+        });
+    }
+});
+
+// DELETE /api/deadlines/:id - Obriši rok
+app.delete('/api/deadlines/:id', async (req, res) => {
+    const deadlineId = req.params.id;
+    
+    try {
+        const [result] = await pool.execute(
+            'DELETE FROM deadlines WHERE id = ?',
+            [deadlineId]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Rok nije pronađen' });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Rok je uspešno obrisan'
+        });
+    } catch (error) {
+        console.error('Error deleting deadline:', error);
+        res.status(500).json({ 
+            error: 'Greška pri brisanju roka' 
+        });
+    }
+});
+
+// PUT /api/deadlines/:id - Ažuriraj rok
+app.put('/api/deadlines/:id', async (req, res) => {
+    const deadlineId = req.params.id;
+    const { title, description, deadline_date } = req.body;
+    
+    if (!title || !deadline_date) {
+        return res.status(400).json({ 
+            error: 'Naziv i datum su obavezni' 
+        });
+    }
+    
+    try {
+        const [result] = await pool.execute(
+            'UPDATE deadlines SET title = ?, description = ?, deadline_date = ? WHERE id = ?',
+            [title, description || null, deadline_date, deadlineId]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Rok nije pronađen' });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Rok je uspešno ažuriran'
+        });
+    } catch (error) {
+        console.error('Error updating deadline:', error);
+        res.status(500).json({ 
+            error: 'Greška pri ažuriranju roka' 
+        });
+    }
+});
+
+
+app.get('/api/registration-status', async (req, res) => {
+    try {
+        const now = new Date();
+        
+        // Pronađi rok za prijavu projekata
+        const registrationQuery = `
+            SELECT * FROM deadlines 
+            WHERE title LIKE '%prijav%' 
+            AND deadline_date >= ?
+            ORDER BY deadline_date ASC 
+            LIMIT 1
+        `;
+        
+        const [registrationDeadlines] = await pool.execute(registrationQuery, [now]);
+        
+        if (registrationDeadlines.length === 0) {
+            // Nema aktivnih rokova za prijavu
+            return res.json({
+                isOpen: false,
+                message: 'Trenutno nema otvorenih prijava',
+                deadline: null,
+                daysLeft: 0
+            });
+        }
+        
+        const deadline = registrationDeadlines[0];
+        const deadlineDate = new Date(deadline.deadline_date);
+        const timeDiff = deadlineDate - now;
+        const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        
+        if (timeDiff > 0) {
+            // Prijave su otvorene
+            let message = 'Prijave su otvorene';
+            if (daysLeft <= 3) {
+                message += ` - ${daysLeft} dana preostalo!`;
+            } else {
+                message += ` - ${daysLeft} dana preostalo`;
+            }
+            
+            res.json({
+                isOpen: true,
+                message: message,
+                deadline: deadline.deadline_date,
+                daysLeft: daysLeft,
+                deadlineTitle: deadline.title
+            });
+        } else {
+            // Rok je istekao
+            res.json({
+                isOpen: false,
+                message: 'Rok za prijave je istekao',
+                deadline: deadline.deadline_date,
+                daysLeft: 0
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error checking registration status:', error);
+        res.status(500).json({
+            isOpen: false,
+            message: 'Greška pri proveri statusa prijava',
+            error: error.message
+        });
+    }
+});
+
+// Modifikujte postojeću POST /api/projects rutu da proveri status prijava
+// Zamenite postojeću rutu sa ovom:
+app.post('/api/projects', async (req, res) => {
+    try {
+        // Prvo proveri da li su prijave otvorene
+        const now = new Date();
+        const registrationQuery = `
+            SELECT * FROM deadlines 
+            WHERE title LIKE '%prijav%' 
+            AND deadline_date >= ?
+            ORDER BY deadline_date ASC 
+            LIMIT 1
+        `;
+        
+        const [registrationDeadlines] = await pool.execute(registrationQuery, [now]);
+        
+        if (registrationDeadlines.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: 'Trenutno nema otvorenih prijava za projekte'
+            });
+        }
+        
+        const deadline = registrationDeadlines[0];
+        const deadlineDate = new Date(deadline.deadline_date);
+        
+        if (now >= deadlineDate) {
+            return res.status(403).json({
+                success: false,
+                message: 'Rok za prijave je istekao'
+            });
+        }
+        
+        // Ako su prijave otvorene, nastavi sa kreiranjem projekta
+        const { user_id, naziv, opis, tehnologije, ciljevi, plan_rada } = req.body;
+        
+        const [result] = await pool.execute(
+            'INSERT INTO projects (user_id, naziv, opis, tehnologije, ciljevi, plan_rada) VALUES (?, ?, ?, ?, ?, ?)',
+            [user_id, naziv, opis, tehnologije, ciljevi, plan_rada]
+        );
+        
+        res.status(201).json({
+            success: true,
+            project_id: result.insertId,
+            message: 'Projekat je uspešno kreiran'
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Greška pri kreiranju projekta',
+            error: error.message
+        });
+    }
+});
+
 
 // Start server
 app.listen(PORT, () => {
