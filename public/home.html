@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Projekti - Dodaj Novi Projekat</title>
+    <title>Dodaj Novi IoT Projekat</title>
     <style>
         * {
             margin: 0;
@@ -18,57 +18,56 @@
             color: #333;
         }
 
-        /* Navigation Bar */
         .navbar {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            padding: 15px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 0;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
         }
 
         .nav-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 2rem;
         }
 
         .nav-logo {
-            color: white;
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: bold;
+            color: #667eea;
             text-decoration: none;
         }
 
         .nav-menu {
             display: flex;
             list-style: none;
-            gap: 30px;
+            gap: 2rem;
         }
 
-        .nav-menu li a {
-            color: white;
+        .nav-menu a {
             text-decoration: none;
+            color: #333;
             font-weight: 500;
-            transition: opacity 0.3s ease;
+            transition: color 0.3s ease;
         }
 
-        .nav-menu li a:hover,
-        .nav-menu li a.active {
-            opacity: 0.8;
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: #667eea;
         }
 
         .nav-user {
-            color: white;
-            font-weight: 500;
+            font-weight: 600;
+            color: #4a5568;
         }
 
         .container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 20px;
         }
 
         header {
@@ -128,25 +127,26 @@
         }
 
         input[type="text"],
+        input[type="email"],
         textarea {
             padding: 12px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
             font-size: 1rem;
             transition: border-color 0.3s ease;
-            font-family: inherit;
-        }
-
-        textarea {
-            min-height: 100px;
-            resize: vertical;
         }
 
         input[type="text"]:focus,
+        input[type="email"]:focus,
         textarea:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
         }
 
         button {
@@ -161,13 +161,20 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
         }
 
         button:active {
             transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .success {
@@ -188,19 +195,56 @@
             display: none;
         }
 
+        .warning {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .info {
+            background: #dbeafe;
+            color: #1e3a8a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .deadline-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-dot.open {
+            background: #10b981;
+        }
+
+        .status-dot.closing {
+            background: #f59e0b;
+        }
+
+        .status-dot.closed {
+            background: #ef4444;
+        }
+
+        .form-disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
         @media (max-width: 768px) {
-            .nav-container {
-                flex-direction: column;
-                gap: 15px;
-                padding: 0 10px;
-            }
-
-            .nav-menu {
-                gap: 20px;
-            }
-
             .container {
-                padding: 20px 10px;
+                padding: 10px;
             }
             
             header h1 {
@@ -209,6 +253,14 @@
             
             section {
                 padding: 20px;
+            }
+            
+            .nav-container {
+                padding: 0 1rem;
+            }
+            
+            .nav-menu {
+                gap: 1rem;
             }
         }
     </style>
@@ -220,8 +272,8 @@
             <ul class="nav-menu">
                 <li><a href="#">Početna</a></li>
                 <li><a href="#" class="active">Moji Projekti</a></li>
-                <li><a href="/gallery.html">Gelerija</a></li>
-                <li><a href="/deadlines.html">Rokovi</a></li>
+                <li><a href="/gallery">Galerija</a></li>
+                <li><a href="/deadlines">Rokovi</a></li>
                 <li><a href="#">Profil</a></li>
             </ul>
             <div class="nav-user">
@@ -237,6 +289,15 @@
         </header>
 
         <main>
+            <!-- Status prijava -->
+            <section>
+                <div class="deadline-status" id="deadlineStatus">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Proverava status prijava...</span>
+                </div>
+                <div id="deadlineInfo" class="info" style="display: none;"></div>
+            </section>
+
             <section class="form-section">
                 <h2>Detalji Projekta</h2>
                 <form id="projectForm">
@@ -265,7 +326,7 @@
                         <textarea id="plan_rada" name="plan_rada" placeholder="Opišite korake implementacije..."></textarea>
                     </div>
 
-                    <button type="submit">Dodaj Projekat</button>
+                    <button type="submit" id="submitButton">Dodaj Projekat</button>
                 </form>
 
                 <div class="success" id="successMessage">
@@ -284,11 +345,18 @@
             const userData = localStorage.getItem('user');
             if (!userData) {
                 alert('Niste ulogovani!');
-                window.location.href = 'login.html';
+                window.location.href = '/';
                 return null;
             }
             return JSON.parse(userData);
         }
+
+        // DOM elementi
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const deadlineInfo = document.getElementById('deadlineInfo');
+        const projectForm = document.getElementById('projectForm');
+        const submitButton = document.getElementById('submitButton');
 
         // Proveri da li je korisnik ulogovan pri učitavanju stranice
         const currentUser = getCurrentUser();
@@ -296,11 +364,86 @@
             document.querySelector('.nav-user').textContent = `Dobrodošli, ${currentUser.name}!`;
         }
 
+        // Proveri status rokova
+        async function checkRegistrationStatus() {
+            try {
+                const response = await fetch('/api/registration-status');
+                const status = await response.json();
+
+                if (response.ok) {
+                    updateRegistrationStatus(status);
+                } else {
+                    throw new Error(status.error || 'Greška pri proveri statusa');
+                }
+            } catch (error) {
+                console.error('Error checking registration status:', error);
+                statusDot.className = 'status-dot closed';
+                statusText.textContent = 'Greška pri proveri statusa prijava';
+                disableForm();
+            }
+        }
+
+        // Ažuriraj status prijava
+        function updateRegistrationStatus(status) {
+            const { isOpen, message, deadline, daysLeft } = status;
+
+            if (isOpen) {
+                statusDot.className = daysLeft <= 3 ? 'status-dot closing' : 'status-dot open';
+                statusText.textContent = message;
+                enableForm();
+                
+                if (deadline) {
+                    deadlineInfo.innerHTML = `
+                        📅 Prijave su otvorene do: <strong>${new Date(deadline).toLocaleString('sr-RS')}</strong><br>
+                        ⏰ Preostalo vreme: <strong>${daysLeft} dana</strong>
+                    `;
+                    deadlineInfo.style.display = 'block';
+                }
+            } else {
+                statusDot.className = 'status-dot closed';
+                statusText.textContent = message;
+                disableForm();
+                deadlineInfo.style.display = 'none';
+            }
+        }
+
+        // Onemogući formu
+        function disableForm() {
+            projectForm.classList.add('form-disabled');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Prijave su zatvorene';
+        }
+
+        // Omogući formu
+        function enableForm() {
+            projectForm.classList.remove('form-disabled');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Dodaj Projekat';
+        }
+
+        // Submit form handler
         document.getElementById('projectForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const user = getCurrentUser();
             if (!user) return;
+
+            // Dodatna provera statusa pre slanja
+            try {
+                const statusResponse = await fetch('/api/registration-status');
+                const status = await statusResponse.json();
+                
+                if (!status.isOpen) {
+                    document.getElementById('errorMessage').textContent = 'Prijave su trenutno zatvorene!';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    return;
+                }
+            } catch (error) {
+                console.error('Error checking status before submit:', error);
+                document.getElementById('errorMessage').textContent = 'Greška pri proveri statusa prijava';
+                document.getElementById('errorMessage').style.display = 'block';
+                return;
+            }
 
             const formData = new FormData(this);
             const projectData = {
@@ -339,6 +482,14 @@
                 document.getElementById('successMessage').style.display = 'none';
                 document.getElementById('errorMessage').textContent = 'Greška: ' + error.message;
             }
+        });
+
+        // Inicijalizacija
+        document.addEventListener('DOMContentLoaded', () => {
+            checkRegistrationStatus();
+            
+            // Periodicno ažuriranje statusa (svakih 5 minuta)
+            setInterval(checkRegistrationStatus, 300000);
         });
     </script>
 </body>

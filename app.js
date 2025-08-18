@@ -509,6 +509,130 @@ app.put('/api/deadlines/:id', async (req, res) => {
     }
 });
 
+
+app.get('/api/registration-status', async (req, res) => {
+    try {
+        const now = new Date();
+        
+        // Pronađi rok za prijavu projekata
+        const registrationQuery = `
+            SELECT * FROM deadlines 
+            WHERE title LIKE '%prijav%' 
+            AND deadline_date >= ?
+            ORDER BY deadline_date ASC 
+            LIMIT 1
+        `;
+        
+        const [registrationDeadlines] = await pool.execute(registrationQuery, [now]);
+        
+        if (registrationDeadlines.length === 0) {
+            // Nema aktivnih rokova za prijavu
+            return res.json({
+                isOpen: false,
+                message: 'Trenutno nema otvorenih prijava',
+                deadline: null,
+                daysLeft: 0
+            });
+        }
+        
+        const deadline = registrationDeadlines[0];
+        const deadlineDate = new Date(deadline.deadline_date);
+        const timeDiff = deadlineDate - now;
+        const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        
+        if (timeDiff > 0) {
+            // Prijave su otvorene
+            let message = 'Prijave su otvorene';
+            if (daysLeft <= 3) {
+                message += ` - ${daysLeft} dana preostalo!`;
+            } else {
+                message += ` - ${daysLeft} dana preostalo`;
+            }
+            
+            res.json({
+                isOpen: true,
+                message: message,
+                deadline: deadline.deadline_date,
+                daysLeft: daysLeft,
+                deadlineTitle: deadline.title
+            });
+        } else {
+            // Rok je istekao
+            res.json({
+                isOpen: false,
+                message: 'Rok za prijave je istekao',
+                deadline: deadline.deadline_date,
+                daysLeft: 0
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error checking registration status:', error);
+        res.status(500).json({
+            isOpen: false,
+            message: 'Greška pri proveri statusa prijava',
+            error: error.message
+        });
+    }
+});
+
+// Modifikujte postojeću POST /api/projects rutu da proveri status prijava
+// Zamenite postojeću rutu sa ovom:
+app.post('/api/projects', async (req, res) => {
+    try {
+        // Prvo proveri da li su prijave otvorene
+        const now = new Date();
+        const registrationQuery = `
+            SELECT * FROM deadlines 
+            WHERE title LIKE '%prijav%' 
+            AND deadline_date >= ?
+            ORDER BY deadline_date ASC 
+            LIMIT 1
+        `;
+        
+        const [registrationDeadlines] = await pool.execute(registrationQuery, [now]);
+        
+        if (registrationDeadlines.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: 'Trenutno nema otvorenih prijava za projekte'
+            });
+        }
+        
+        const deadline = registrationDeadlines[0];
+        const deadlineDate = new Date(deadline.deadline_date);
+        
+        if (now >= deadlineDate) {
+            return res.status(403).json({
+                success: false,
+                message: 'Rok za prijave je istekao'
+            });
+        }
+        
+        // Ako su prijave otvorene, nastavi sa kreiranjem projekta
+        const { user_id, naziv, opis, tehnologije, ciljevi, plan_rada } = req.body;
+        
+        const [result] = await pool.execute(
+            'INSERT INTO projects (user_id, naziv, opis, tehnologije, ciljevi, plan_rada) VALUES (?, ?, ?, ?, ?, ?)',
+            [user_id, naziv, opis, tehnologije, ciljevi, plan_rada]
+        );
+        
+        res.status(201).json({
+            success: true,
+            project_id: result.insertId,
+            message: 'Projekat je uspešno kreiran'
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Greška pri kreiranju projekta',
+            error: error.message
+        });
+    }
+});
+
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

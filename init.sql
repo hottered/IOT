@@ -122,13 +122,11 @@ CREATE TABLE IF NOT EXISTS deadlines (
 
 -- Insert sample deadlines
 INSERT INTO deadlines (title, description, deadline_date, created_by) VALUES
-('Početak prijave projekata', 'Otvorene su prijave za novo takmičenje', '2025-08-20 09:00:00', 1),
-('Kraj prijave projekata', 'Poslednji dan za prijavu projekata', '2025-09-15 23:59:59', 1),
-('Slanje završnih radova', 'Krajnji rok za slanje kompletnih projekata', '2025-10-01 23:59:59', 1),
-('Početak ocenjivanja', 'Žiri počinje sa ocenjivanjem projekata', '2025-10-05 09:00:00', 1),
-('Kraj ocenjivanja', 'Završetak procesa ocenjivanja', '2025-10-20 17:00:00', 1),
-('Proglašenje pobednika', 'Ceremonija proglašenja pobednika', '2025-10-25 19:00:00', 1);
-
+('Otvaranje prijava za projekte', 'Počinje period prijave novih projekata', '2025-08-1 09:00:00', 1);
+-- ('Kraj prijava za projekte', 'Poslednji dan za prijavu projekata na takmičenje', '2025-08-25 23:59:59', 1),
+-- ('Početak evaluacije', 'Žiri počinje sa ocenjivanjem projekata', '2025-08-30 09:00:00', 1),
+-- ('Kraj evaluacije', 'Završetak procesa ocenjivanja', '2025-09-15 17:00:00', 1),
+-- ('Proglašenje pobednika', 'Ceremonija dodele nagrada', '2025-09-20 19:00:00', 1);
 
 -- Grant permissions to root user from any host (for Docker networking)
 GRANT ALL PRIVILEGES ON testdb.* TO 'root'@'%' WITH GRANT OPTION;
