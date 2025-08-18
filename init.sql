@@ -105,6 +105,31 @@ INSERT INTO project_views (project_id, user_id, ip_address) VALUES
 (4, 2, '192.168.1.101'),
 (5, 1, '192.168.1.100'),
 (5, 3, '192.168.1.101');
+
+-- Create deadlines table
+CREATE TABLE IF NOT EXISTS deadlines (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    deadline_date DATETIME NOT NULL,
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_deadline_date (deadline_date),
+    INDEX idx_created_by (created_by)
+);
+
+-- Insert sample deadlines
+INSERT INTO deadlines (title, description, deadline_date, created_by) VALUES
+('Početak prijave projekata', 'Otvorene su prijave za novo takmičenje', '2025-08-20 09:00:00', 1),
+('Kraj prijave projekata', 'Poslednji dan za prijavu projekata', '2025-09-15 23:59:59', 1),
+('Slanje završnih radova', 'Krajnji rok za slanje kompletnih projekata', '2025-10-01 23:59:59', 1),
+('Početak ocenjivanja', 'Žiri počinje sa ocenjivanjem projekata', '2025-10-05 09:00:00', 1),
+('Kraj ocenjivanja', 'Završetak procesa ocenjivanja', '2025-10-20 17:00:00', 1),
+('Proglašenje pobednika', 'Ceremonija proglašenja pobednika', '2025-10-25 19:00:00', 1);
+
+
 -- Grant permissions to root user from any host (for Docker networking)
 GRANT ALL PRIVILEGES ON testdb.* TO 'root'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;

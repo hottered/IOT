@@ -392,6 +392,122 @@ app.get('/gallery', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'gallery.html'));
 });
 
+// Route za deadlines.html
+app.get('/deadlines', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'deadlines.html'));
+});
+
+// GET /api/deadlines - Dobij sve rokove
+app.get('/api/deadlines', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                d.id,
+                d.title,
+                d.description,
+                d.deadline_date,
+                d.created_at,
+                u.name as created_by_name
+            FROM deadlines d
+            LEFT JOIN users u ON d.created_by = u.id
+            ORDER BY d.deadline_date ASC
+        `;
+        
+        const [deadlines] = await pool.execute(query);
+        res.json(deadlines);
+    } catch (error) {
+        console.error('Error fetching deadlines:', error);
+        res.status(500).json({ error: 'Failed to fetch deadlines' });
+    }
+});
+
+// POST /api/deadlines - Dodaj novi rok
+app.post('/api/deadlines', async (req, res) => {
+    const { title, description, deadline_date, created_by } = req.body;
+    
+    if (!title || !deadline_date || !created_by) {
+        return res.status(400).json({ 
+            error: 'Naziv, datum i kreator su obavezni' 
+        });
+    }
+    
+    try {
+        const [result] = await pool.execute(
+            'INSERT INTO deadlines (title, description, deadline_date, created_by) VALUES (?, ?, ?, ?)',
+            [title, description || null, deadline_date, created_by]
+        );
+        
+        res.status(201).json({
+            success: true,
+            deadline_id: result.insertId,
+            message: 'Rok je uspešno kreiran'
+        });
+    } catch (error) {
+        console.error('Error creating deadline:', error);
+        res.status(500).json({ 
+            error: 'Greška pri kreiranju roka' 
+        });
+    }
+});
+
+// DELETE /api/deadlines/:id - Obriši rok
+app.delete('/api/deadlines/:id', async (req, res) => {
+    const deadlineId = req.params.id;
+    
+    try {
+        const [result] = await pool.execute(
+            'DELETE FROM deadlines WHERE id = ?',
+            [deadlineId]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Rok nije pronađen' });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Rok je uspešno obrisan'
+        });
+    } catch (error) {
+        console.error('Error deleting deadline:', error);
+        res.status(500).json({ 
+            error: 'Greška pri brisanju roka' 
+        });
+    }
+});
+
+// PUT /api/deadlines/:id - Ažuriraj rok
+app.put('/api/deadlines/:id', async (req, res) => {
+    const deadlineId = req.params.id;
+    const { title, description, deadline_date } = req.body;
+    
+    if (!title || !deadline_date) {
+        return res.status(400).json({ 
+            error: 'Naziv i datum su obavezni' 
+        });
+    }
+    
+    try {
+        const [result] = await pool.execute(
+            'UPDATE deadlines SET title = ?, description = ?, deadline_date = ? WHERE id = ?',
+            [title, description || null, deadline_date, deadlineId]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Rok nije pronađen' });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Rok je uspešno ažuriran'
+        });
+    } catch (error) {
+        console.error('Error updating deadline:', error);
+        res.status(500).json({ 
+            error: 'Greška pri ažuriranju roka' 
+        });
+    }
+});
 
 // Start server
 app.listen(PORT, () => {

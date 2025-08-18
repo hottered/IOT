@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upravljanje rokovima</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        main {
+            display: grid;
+            gap: 30px;
+            grid-template-columns: 1fr;
+        }
+
+        section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .form-section form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="datetime-local"],
+        textarea {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="datetime-local"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .deadlines-container {
+            margin-top: 20px;
+            display: grid;
+            gap: 15px;
+        }
+
+        .deadline-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s ease;
+        }
+
+        .deadline-card:hover {
+            transform: translateX(5px);
+        }
+
+        .deadline-card.expired {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .deadline-card.soon {
+            border-left-color: #fbbf24;
+            background: #fffbeb;
+        }
+
+        .deadline-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .deadline-description {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .deadline-date {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .deadline-date.expired {
+            color: #ef4444;
+        }
+
+        .deadline-date.soon {
+            color: #f59e0b;
+        }
+
+        .deadline-date.active {
+            color: #10b981;
+        }
+
+        .deadline-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-edit {
+            background: #f59e0b;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fbbf24;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+            animation: none;
+        }
+
+        .status-dot.error {
+            background: #ef4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Upravljanje rokovima</h1>
+            <p>Definiši i upravljaj rokovima za takmičenje</p>
+        </header>
+
+        <main>
+            <!-- Dodavanje novog roka -->
+            <section class="form-section">
+                <h2>Dodaj novi rok</h2>
+                <form id="deadlineForm">
+                    <div class="input-group">
+                        <label for="title">Naziv roka:</label>
+                        <input type="text" id="title" name="title" required placeholder="npr. Kraj prijave projekata">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="description">Opis:</label>
+                        <textarea id="description" name="description" placeholder="Kratko objašnjenje roka..."></textarea>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="deadline_date">Datum i vreme:</label>
+                        <input type="datetime-local" id="deadline_date" name="deadline_date" required>
+                    </div>
+                    
+                    <button type="submit">Dodaj rok</button>
+                </form>
+                <div id="message"></div>
+            </section>
+
+            <!-- Status konekcije -->
+            <section>
+                <h2>Status konekcije</h2>
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Proverava konekciju...</span>
+                </div>
+            </section>
+
+            <!-- Lista rokova -->
+            <section>
+                <h2>Trenutni rokovi</h2>
+                <div id="deadlinesContainer" class="deadlines-container">
+                    <div class="loading">Učitava rokove...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+
+        // Proveri da li je korisnik ulogovan
+        if (!currentUser) {
+            alert('Molimo prijavite se prvo');
+            window.location.href = '/';
+        }
+
+        const API_BASE = '/api';
+
+        // DOM elementi
+        const deadlineForm = document.getElementById('deadlineForm');
+        const deadlinesContainer = document.getElementById('deadlinesContainer');
+        const messageDiv = document.getElementById('message');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        // Inicijalizacija
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDeadlines();
+            checkConnection();
+        });
+
+        // Forma za dodavanje roka
+        deadlineForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(deadlineForm);
+            const deadlineData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                deadline_date: formData.get('deadline_date'),
+                created_by: currentUser.id
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/deadlines`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(deadlineData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Rok je uspešno dodat!', 'success');
+                    deadlineForm.reset();
+                    loadDeadlines();
+                } else {
+                    showMessage(result.error || 'Greška pri dodavanju roka', 'error');
+                }
+            } catch (error) {
+                console.error('Error adding deadline:', error);
+                showMessage('Greška pri komunikaciji sa serverom', 'error');
+            }
+        });
+
+        // Učitaj rokove
+        async function loadDeadlines() {
+            try {
+                const response = await fetch(`${API_BASE}/deadlines`);
+                const deadlines = await response.json();
+
+                if (response.ok) {
+                    displayDeadlines(deadlines);
+                    updateConnectionStatus(true);
+                } else {
+                    throw new Error(deadlines.error || 'Failed to fetch deadlines');
+                }
+            } catch (error) {
+                console.error('Error loading deadlines:', error);
+                deadlinesContainer.innerHTML = '<div class="error">Greška pri učitavanju rokova</div>';
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Prikaži rokove
+        function displayDeadlines(deadlines) {
+            if (deadlines.length === 0) {
+                deadlinesContainer.innerHTML = '<div class="loading">Nema definisanih rokova</div>';
+                return;
+            }
+
+            const now = new Date();
+            
+            deadlinesContainer.innerHTML = deadlines.map(deadline => {
+                const deadlineDate = new Date(deadline.deadline_date);
+                const timeDiff = deadlineDate - now;
+                const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                
+                let statusClass = 'active';
+                let statusText = `${daysLeft} dana preostalo`;
+                
+                if (timeDiff < 0) {
+                    statusClass = 'expired';
+                    statusText = `Istekao pre ${Math.abs(daysLeft)} dana`;
+                } else if (daysLeft <= 3) {
+                    statusClass = 'soon';
+                    statusText = `${daysLeft} dana preostalo - Hitno!`;
+                }
+
+                return `
+                    <div class="deadline-card ${statusClass}">
+                        <div class="deadline-title">${deadline.title}</div>
+                        <div class="deadline-description">${deadline.description || ''}</div>
+                        <div class="deadline-date ${statusClass}">
+                            📅 ${new Date(deadline.deadline_date).toLocaleString('sr-RS')}
+                        </div>
+                        <div class="deadline-date ${statusClass}">
+                            ⏰ ${statusText}
+                        </div>
+                        <div class="deadline-actions">
+                            <button class="btn-delete" onclick="deleteDeadline(${deadline.id})">
+                                Obriši
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Obriši rok
+        async function deleteDeadline(deadlineId) {
+            if (!confirm('Da li ste sigurni da želite da obrišete ovaj rok?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/deadlines/${deadlineId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Rok je uspešno obrisan!', 'success');
+                    loadDeadlines();
+                } else {
+                    showMessage(result.error || 'Greška pri brisanju roka', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting deadline:', error);
+                showMessage('Greška pri komunikaciji sa serverom', 'error');
+            }
+        }
+
+        // Proveri konekciju sa serverom
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    updateConnectionStatus(true);
+                } else {
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Ažuriraj status konekcije
+        function updateConnectionStatus(isConnected) {
+            if (isConnected) {
+                statusDot.className = 'status-dot connected';
+                statusText.textContent = 'Povezano sa serverom';
+            } else {
+                statusDot.className = 'status-dot error';
+                statusText.textContent = 'Greška konekcije';
+            }
+        }
+
+        // Prikaži poruku
+        function showMessage(message, type) {
+            messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // Periodično ažuriranje
+        setInterval(() => {
+            loadDeadlines();
+            checkConnection();
+        }, 30000); // Svakih 30 sekundi
+    </script>
+</body>
+</html>
