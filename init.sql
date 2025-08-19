@@ -128,6 +128,20 @@ INSERT INTO deadlines (title, description, deadline_date, created_by) VALUES
 -- ('Kraj evaluacije', 'Završetak procesa ocenjivanja', '2025-09-15 17:00:00', 1),
 -- ('Proglašenje pobednika', 'Ceremonija dodele nagrada', '2025-09-20 19:00:00', 1);
 
+CREATE TABLE IF NOT EXISTS project_files (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  user_id INT NULL,
+  object_name VARCHAR(512) NOT NULL,     -- npr. project-12/1724056400000-design.pdf
+  original_name VARCHAR(255) NOT NULL,   -- originalno ime (za prikaz)
+  mime_type VARCHAR(127) NOT NULL,
+  size_bytes BIGINT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_project_files_project (project_id, created_at)
+);
+
 -- Grant permissions to root user from any host (for Docker networking)
 GRANT ALL PRIVILEGES ON testdb.* TO 'root'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;

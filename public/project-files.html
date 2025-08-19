@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="sr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Detalji projekta</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/styles/upload.css" />
+</head>
+
+<body>
+    <div class="container">
+        <h1 id="projectTitle">Projekt – Detalji</h1>
+
+        <!-- Upload sekcija -->
+        <section class="card">
+            <h2>Dodaj fajl</h2>
+            <form id="uploadForm">
+                <div class="row">
+                    <label for="fileInput">Fajl</label>
+                    <input type="file" id="fileInput" name="file" required />
+                </div>
+                <div class="row">
+                    <label for="userId">Korisnik (ID)</label>
+                    <input type="number" id="userId" name="userId" placeholder="npr. 1" />
+                </div>
+                <button type="submit" id="uploadBtn">Upload</button>
+                <div id="uploadStatus" class="status"></div>
+            </form>
+        </section>
+
+        <!-- Lista fajlova -->
+        <section class="card">
+            <h2>Fajlovi projekta</h2>
+            <div id="filesEmpty" class="muted">Još uvek nema fajlova.</div>
+            <table id="filesTable" class="hidden">
+                <thead>
+                    <tr>
+                        <th>Ime</th>
+                        <th>Veličina</th>
+                        <th>Datum</th>
+                        <th>Preuzmi</th>
+                    </tr>
+                </thead>
+                <tbody id="filesTbody"></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        (function () {
+            // Uzimamo projectId iz URL-a: /project/123 -> 123
+            const projectId = (function () {
+                const parts = window.location.pathname.split('/');
+                return parts[2] || '1';
+            })();
+
+            document.getElementById('projectTitle').textContent = `Projekat #${projectId} – Detalji`;
+
+            const uploadForm = document.getElementById('uploadForm');
+            const fileInput = document.getElementById('fileInput');
+            const userIdInput = document.getElementById('userId');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadStatus = document.getElementById('uploadStatus');
+
+            const filesEmpty = document.getElementById('filesEmpty');
+            const filesTable = document.getElementById('filesTable');
+            const filesTbody = document.getElementById('filesTbody');
+
+            function fmtSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                const kb = bytes / 1024;
+                if (kb < 1024) return kb.toFixed(1) + ' KB';
+                const mb = kb / 1024;
+                if (mb < 1024) return mb.toFixed(1) + ' MB';
+                return (mb / 1024).toFixed(1) + ' GB';
+            }
+
+            function fmtDate(s) {
+                const d = new Date(s);
+                return d.toLocaleString();
+            }
+
+            async function loadFiles() {
+                try {
+                    const res = await fetch(`/api/projects/${projectId}/files`);
+                    const data = await res.json();
+                    filesTbody.innerHTML = '';
+
+                    if (!Array.isArray(data) || data.length === 0) {
+                        filesEmpty.classList.remove('hidden');
+                        filesTable.classList.add('hidden');
+                        return;
+                    }
+
+                    filesEmpty.classList.add('hidden');
+                    filesTable.classList.remove('hidden');
+
+                    data.forEach(f => {
+                        const tr = document.createElement('tr');
+
+                        const tdName = document.createElement('td');
+                        tdName.textContent = f.original_name;
+
+                        const tdSize = document.createElement('td');
+                        tdSize.textContent = fmtSize(f.size_bytes);
+
+                        const tdDate = document.createElement('td');
+                        tdDate.textContent = fmtDate(f.created_at);
+
+                        const tdAction = document.createElement('td');
+                        const a = document.createElement('a');
+                        a.href = f.downloadUrl;
+                        a.textContent = 'Preuzmi';
+                        a.setAttribute('download', f.original_name);
+                        tdAction.appendChild(a);
+
+                        tr.appendChild(tdName);
+                        tr.appendChild(tdSize);
+                        tr.appendChild(tdDate);
+                        tr.appendChild(tdAction);
+                        filesTbody.appendChild(tr);
+                    });
+                } catch (e) {
+                    console.error('Greška pri učitavanju fajlova', e);
+                }
+            }
+
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    uploadStatus.textContent = 'Izaberi fajl.';
+                    uploadStatus.className = 'status err';
+                    return;
+                }
+
+                uploadBtn.disabled = true;
+                uploadStatus.textContent = 'Upload u toku...';
+                uploadStatus.className = 'status';
+
+                try {
+                    const fd = new FormData();
+                    fd.append('file', fileInput.files[0]);
+                    if (userIdInput.value) fd.append('userId', userIdInput.value);
+
+                    const res = await fetch(`/api/projects/${projectId}/upload`, {
+                        method: 'POST',
+                        body: fd
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data?.error || 'Greška pri uploadu');
+                    }
+
+                    uploadStatus.textContent = 'Fajl uspešno uploadovan.';
+                    uploadStatus.className = 'status ok';
+                    fileInput.value = '';
+
+                    await loadFiles();
+                } catch (err) {
+                    uploadStatus.textContent = err.message;
+                    uploadStatus.className = 'status err';
+                } finally {
+                    uploadBtn.disabled = false;
+                }
+            });
+
+            // Inicijalno učitavanje liste fajlova
+            loadFiles();
+        })();
+    </script>
+</body>
+
+</html>

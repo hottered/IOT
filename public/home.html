@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="sr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,7 +23,7 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             padding: 1rem 0;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
         }
 
         .nav-container {
@@ -79,7 +80,7 @@
         header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         header p {
@@ -97,7 +98,7 @@
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
         }
 
@@ -246,25 +247,26 @@
             .container {
                 padding: 10px;
             }
-            
+
             header h1 {
                 font-size: 2rem;
             }
-            
+
             section {
                 padding: 20px;
             }
-            
+
             .nav-container {
                 padding: 0 1rem;
             }
-            
+
             .nav-menu {
                 gap: 1rem;
             }
         }
     </style>
 </head>
+
 <body>
     <nav class="navbar">
         <div class="nav-container">
@@ -313,17 +315,30 @@
 
                     <div class="input-group">
                         <label for="tehnologije">Korišćene tehnologije</label>
-                        <input type="text" id="tehnologije" name="tehnologije" placeholder="Arduino, Raspberry Pi, sensors, WiFi...">
+                        <input type="text" id="tehnologije" name="tehnologije"
+                            placeholder="Arduino, Raspberry Pi, sensors, WiFi...">
                     </div>
 
                     <div class="input-group">
                         <label for="ciljevi">Ciljevi projekta</label>
-                        <textarea id="ciljevi" name="ciljevi" placeholder="Koje probleme rešava vaš projekat?"></textarea>
+                        <textarea id="ciljevi" name="ciljevi"
+                            placeholder="Koje probleme rešava vaš projekat?"></textarea>
                     </div>
 
                     <div class="input-group">
                         <label for="plan_rada">Plan rada</label>
-                        <textarea id="plan_rada" name="plan_rada" placeholder="Opišite korake implementacije..."></textarea>
+                        <textarea id="plan_rada" name="plan_rada"
+                            placeholder="Opišite korake implementacije..."></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="fileInput">Fajl</label>
+                        <input type="file" id="fileInput" name="files" multiple />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="userId">Korisnik (ID)</label>
+                        <input type="number" id="user_id" name="user_id" placeholder="npr. 1" />
                     </div>
 
                     <button type="submit" id="submitButton">Dodaj Projekat</button>
@@ -358,6 +373,8 @@
         const projectForm = document.getElementById('projectForm');
         const submitButton = document.getElementById('submitButton');
 
+        const fileInput = document.getElementById('fileInput');
+
         // Proveri da li je korisnik ulogovan pri učitavanju stranice
         const currentUser = getCurrentUser();
         if (currentUser) {
@@ -391,7 +408,7 @@
                 statusDot.className = daysLeft <= 3 ? 'status-dot closing' : 'status-dot open';
                 statusText.textContent = message;
                 enableForm();
-                
+
                 if (deadline) {
                     deadlineInfo.innerHTML = `
                         📅 Prijave su otvorene do: <strong>${new Date(deadline).toLocaleString('sr-RS')}</strong><br>
@@ -422,7 +439,7 @@
         }
 
         // Submit form handler
-        document.getElementById('projectForm').addEventListener('submit', async function(e) {
+        document.getElementById('projectForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const user = getCurrentUser();
@@ -432,7 +449,7 @@
             try {
                 const statusResponse = await fetch('/api/registration-status');
                 const status = await statusResponse.json();
-                
+
                 if (!status.isOpen) {
                     document.getElementById('errorMessage').textContent = 'Prijave su trenutno zatvorene!';
                     document.getElementById('errorMessage').style.display = 'block';
@@ -446,22 +463,25 @@
             }
 
             const formData = new FormData(this);
-            const projectData = {
-                user_id: user.id,
-                naziv: formData.get('naziv'),
-                opis: formData.get('opis'),
-                tehnologije: formData.get('tehnologije'),
-                ciljevi: formData.get('ciljevi'),
-                plan_rada: formData.get('plan_rada')
-            };
+            
+            // const projectData = {
+            //     user_id: user.id,
+            //     naziv: formData.get('naziv'),
+            //     opis: formData.get('opis'),
+            //     tehnologije: formData.get('tehnologije'),
+            //     ciljevi: formData.get('ciljevi'),
+            //     plan_rada: formData.get('plan_rada'),
+            //     files: formData.get('files'),
+            // };
 
             try {
                 const response = await fetch('/api/projects', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(projectData)
+                    // headers: {
+                    //     'Content-Type': 'application/json',
+                    // },
+                    // body: JSON.stringify(projectData)
+                    body: formData
                 });
 
                 const result = await response.json();
@@ -470,7 +490,7 @@
                     document.getElementById('successMessage').style.display = 'block';
                     document.getElementById('errorMessage').style.display = 'none';
                     this.reset();
-                    
+
                     setTimeout(() => {
                         document.getElementById('successMessage').style.display = 'none';
                     }, 3000);
@@ -487,10 +507,11 @@
         // Inicijalizacija
         document.addEventListener('DOMContentLoaded', () => {
             checkRegistrationStatus();
-            
+
             // Periodicno ažuriranje statusa (svakih 5 minuta)
-            setInterval(checkRegistrationStatus, 300000);
+            setInterval(checkRegistrationStatus, 3000);
         });
     </script>
 </body>
+
 </html>
