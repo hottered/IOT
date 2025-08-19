@@ -1,7 +1,8 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
 const path = require('path');
-
+const multer = require('multer');
+const Minio = require('minio');
 const app = express();
 const PORT = 3000;
 
@@ -19,6 +20,143 @@ app.use(express.json());
 
 // Create MySQL connection pool
 let pool;
+
+const minioClient = new Minio.Client({
+  endPoint: 'minio',
+  port: 9000,
+  useSSL: false,
+  accessKey: 'minio',
+  secretKey: 'minio123'
+});
+
+const BUCKET_NAME = 'project-files';
+
+(async () => {
+  try {
+    const exists = await minioClient.bucketExists(BUCKET_NAME);
+    if (!exists) {
+      await minioClient.makeBucket(BUCKET_NAME, 'us-east-1');
+      console.log(`Bucket '${BUCKET_NAME}' created`);
+    }
+  } catch (err) {
+    console.error('Error checking/creating bucket:', err);
+  }
+})();
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+// POST /api/projects/:id/upload
+// form-data: file: <file>, userId: <id korisnika> (opciono)
+app.post('/api/projects/:id/upload', upload.single('file'), async (req, res) => {
+  const projectId = req.params.id;
+  const file = req.file;
+  const userId = req.body.userId ? parseInt(req.body.userId, 10) : null;
+
+  if (!file) {
+    return res.status(400).json({ error: 'Fajl je obavezan (form-data key: file)' });
+  }
+
+  try {
+    // generiši jedinstveno ime objekta u bucketu
+    const safeOriginal = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    const objectName = `project-${projectId}/${Date.now()}-${safeOriginal}`;
+
+    // upload u MinIO
+    await minioClient.putObject(
+      BUCKET_NAME,
+      objectName,
+      file.buffer,
+      file.size,
+      { 'Content-Type': file.mimetype }
+    );
+
+    // upiši meta u MySQL
+    await pool.execute(
+      `INSERT INTO project_files (project_id, user_id, object_name, original_name, mime_type, size_bytes)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [projectId, userId, objectName, file.originalname, file.mimetype, file.size]
+    );
+
+    // URL za preuzimanje kroz naš proxy
+    const downloadUrl = `/files?key=${encodeURIComponent(objectName)}`;
+
+    res.json({
+      success: true,
+      message: 'Fajl uspešno uploadovan',
+      file: {
+        objectName,
+        originalName: file.originalname,
+        size: file.size,
+        mime: file.mimetype,
+        downloadUrl
+      }
+    });
+  } catch (err) {
+    console.error('Error uploading file:', err);
+    res.status(500).json({ error: 'Greška pri uploadu fajla' });
+  }
+});
+
+// Proxy za preuzimanje fajlova
+app.get('/files/:projectId/:filename', async (req, res) => {
+  const { projectId, filename } = req.params;
+  const objectName = `project-${projectId}/${filename}`;
+
+  try {
+    minioClient.getObject(BUCKET_NAME, objectName, (err, dataStream) => {
+      if (err) {
+        console.error('Error fetching file:', err);
+        return res.status(404).json({ error: 'Fajl nije pronađen' });
+      }
+      dataStream.pipe(res);
+    });
+  } catch (err) {
+    console.error('Error retrieving file:', err);
+    res.status(500).json({ error: 'Greška pri preuzimanju fajla' });
+  }
+});
+
+app.get('/files', async (req, res) => {
+  const key = req.query.key;
+  if (!key) return res.status(400).json({ error: 'Nedostaje parametar key' });
+
+  try {
+    minioClient.getObject(BUCKET_NAME, key, (err, dataStream) => {
+      if (err) {
+        console.error('Error fetching file:', err);
+        return res.status(404).json({ error: 'Fajl nije pronađen' });
+      }
+      // opcionalno: postaviti Content-Type iz baze
+      dataStream.pipe(res);
+    });
+  } catch (err) {
+    console.error('Error retrieving file:', err);
+    res.status(500).json({ error: 'Greška pri preuzimanju fajla' });
+  }
+});
+
+app.get('/api/projects/:id/files', async (req, res) => {
+  const projectId = req.params.id;
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, project_id, user_id, object_name, original_name, mime_type, size_bytes, created_at
+       FROM project_files
+       WHERE project_id = ?
+       ORDER BY created_at DESC`,
+      [projectId]
+    );
+
+    const withUrls = rows.map(r => ({
+      ...r,
+      downloadUrl: `/files?key=${encodeURIComponent(r.object_name)}`
+    }));
+
+    res.json(withUrls);
+  } catch (err) {
+    console.error('Error listing files:', err);
+    res.status(500).json({ error: 'Greška pri dobijanju liste fajlova' });
+  }
+});
 
 async function initDatabase() {
   const maxRetries = 10;
